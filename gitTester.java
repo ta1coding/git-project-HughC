@@ -7,7 +7,6 @@ public class gitTester {
         Git repo = new Git();
         File testFile = new File("testfile.txt");
         repo.makeBlob(testFile.getPath());
-<<<<<<< HEAD
         File testDir = new File("testDir");
         repo.makeBlob(testDir.getPath());
     }
@@ -23,16 +22,6 @@ public class gitTester {
     // checks if all correct files exist in their propper locations and then deletes
     // them after
 
-=======
-        File testDir = new File("./testDir");
-        System.out.println(testDir.canRead());
-        repo.makeBlob(testDir.getPath());
-        System.out.println("Hello???");
-    }
-
-    // checks if all correct files exist in their propper locations and then deletes
-    // them after
->>>>>>> origin/main
     public static void checkAndDelete() throws IOException {
         File gitDir = new File("git");
 
