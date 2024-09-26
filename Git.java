@@ -1,27 +1,27 @@
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.util.*;
+import java.io.*;
 import java.math.BigInteger;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class Git{
+public class Git {
+
+    public final String[] TYPEARRAY = new String[] { "blob", "tree" };
+
     public static void main(String[] args) throws IOException {
 
     }
 
-    //constructor
-    public Git () throws IOException{
+    // constructor
+    public Git() throws IOException {
         initGitRepo();
     }
 
-    //makes a Git Repo in the current folder 
-    private void initGitRepo() throws IOException{
+    // makes a Git Repo in the current folder
+    private void initGitRepo() throws IOException {
 
         File gitDir = new File("git");
 
@@ -29,34 +29,41 @@ public class Git{
 
         File indexFile = new File("git/index");
 
-        //exist check
-        if (gitDir.exists() && objectsDir.exists() && indexFile.exists()){
+        // exist check
+        if (gitDir.exists() && objectsDir.exists() && indexFile.exists()) {
             System.out.println("Git Repository already exists");
-        }
-        else{
-            if (!gitDir.exists()){
+        } else {
+            if (!gitDir.exists()) {
                 gitDir.mkdir();
             }
-            if (!objectsDir.exists()){
+            if (!objectsDir.exists()) {
                 objectsDir.mkdir();
             }
-            if (!indexFile.exists()){
+            if (!indexFile.exists()) {
                 indexFile.createNewFile();
             }
         }
     }
-    
-    //generates the hash string name according to SHA1
-    private String generateFileName(File input) throws IOException{
-                try {
-            
+
+    private byte[] treeToBytes(File input) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        for (File f : input.listFiles()) {
+            sb.append(TYPEARRAY[f.isDirectory() ? 1 : 0] + " : " + f.getName());
+        }
+        return sb.toString().getBytes();
+    }
+
+    // generates the hash string name according to SHA1
+    private String generateFileName(byte[] input) throws IOException {
+        try {
+
             // getInstance() method is called with algorithm SHA-1
             MessageDigest md = MessageDigest.getInstance("SHA-1");
 
             // digest() method is called
             // to calculate message digest of the input string
             // returned as array of byte
-            byte[] messageDigest = md.digest(Files.readAllBytes(Paths.get(input.getPath())));
+            byte[] messageDigest = md.digest(input);
 
             // Convert byte array into signum representation
             BigInteger no = new BigInteger(1, messageDigest);
@@ -79,34 +86,75 @@ public class Git{
         }
     }
 
-    //
-    public void makeBlob(File input) throws IOException{
-        String fileName = generateFileName(input);
+    public String makeBlob(String path) throws IOException, FileNotFoundException, IllegalStateException {
+        return makeBlob(path, new ArrayList<String>());
+    }
 
-        //creates empty file in objects directory
-        File copy = new File("git/objects/" + fileName);
-        copy.createNewFile();
+    public String makeBlob(String path, ArrayList<String> hashes)
+            throws IOException, FileNotFoundException, IllegalStateException {
 
+        File input = new File(path);
+        if (!input.exists())
+            throw new FileNotFoundException("File doesn't exist");
 
-
-        //should make into bufferedInputStream and BufferedOutputStream later
-        FileInputStream in = new FileInputStream(input);
-
-        FileOutputStream out = new FileOutputStream(copy);
-
-        //copies the contents of the file
-        int n;
-        while ((n = in.read()) != -1){
-            out.write(n);
+        // ignore restricted files
+        if (!input.canRead()) {
+            throw new AccessDeniedException("Can't read the file");
         }
-        in.close();
-        out.close();
 
+        // ignore hidden files
+        if (input.getName().length() > 0 && input.getName().charAt(0) == '.')
+            return null;
 
+        // generate hash
+        String fileName;
+        if (!input.isDirectory()) {
+            fileName = generateFileName(Files.readAllBytes(Paths.get(input.getPath())));
+        } else {
+            fileName = generateFileName(treeToBytes(input));
+        }
 
-        //inserts an entry into index file
+        // check for cycles
+        if (hashes.contains(fileName)) {
+            throw new IllegalStateException("Cycle detected");
+        }
+        hashes.add(fileName);
+
+        // recursively call on directory contents
+        if (input.isDirectory())
+            for (String f : input.list())
+                makeBlob(path + "/" + f, hashes);
+
+        if (!input.isDirectory()) {
+            // creates empty file in objects directory
+            File copy = new File("git/objects/" + fileName);
+            copy.createNewFile();
+
+            // should make into bufferedInputStream and BufferedOutputStream later
+            FileInputStream in = new FileInputStream(input);
+
+            FileOutputStream out = new FileOutputStream(copy);
+
+            // copies the contents of the file
+            int n;
+            while ((n = in.read()) != -1)
+                out.write(n);
+
+            in.close();
+            out.close();
+        } else {
+            File copy = new File("git/objects/" + fileName);
+            copy.createNewFile();
+            FileOutputStream out = new FileOutputStream(copy);
+            out.write(treeToBytes(input));
+            out.close();
+        }
+
+        // inserts an entry into index file
         FileWriter fw = new FileWriter("git/index");
-        fw.write(fileName + " " + input.getName());
+        fw.write(TYPEARRAY[input.isDirectory() ? 1 : 0] + " " + fileName + " " + input.getPath());
         fw.close();
+
+        return fileName;
     }
 }
