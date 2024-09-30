@@ -46,14 +46,25 @@ public class Git {
     }
 
     // recursively generate pre-hashed tree file to be used in generateFileName
-    private byte[] treeToBytes(File input) throws IOException {
+    private byte[] treeToBytes(File input, ArrayList<File> files) throws IOException {
         StringBuilder sb = new StringBuilder();
         for (File f : input.listFiles()) {
-            if (f.isDirectory()) {
-                sb.append("tree " + generateFileName(treeToBytes(f)) + " " + f.getName() + "\n");
+            String fName;
+            if (f.getAbsolutePath().equals(f.getCanonicalPath())) {
+                fName = f.getName();
             } else {
-                sb.append("blob " + generateFileName(Files.readAllBytes(Paths.get(f.getPath()))) + " " + f.getName()
-                        + "\n");
+                fName = f.getAbsolutePath();
+            }
+            if (f.isDirectory()) {
+                if (files.contains(f)) {
+                    throw new IllegalStateException("Cycle detected");
+                }
+                files.add(f);
+                String fHash = generateFileName(treeToBytes(f, files));
+                sb.append("tree " + fHash + " " + fName + "\n");
+            } else {
+                String fHash = generateFileName(Files.readAllBytes(Paths.get(f.getPath())));
+                sb.append("blob " + fHash + " " + fName + "\n");
             }
         }
         return sb.toString().getBytes();
@@ -93,7 +104,8 @@ public class Git {
     }
 
     public String makeBlob(String path) throws IOException, FileNotFoundException, IllegalStateException {
-        return makeBlob(path, new ArrayList<String>());
+        ArrayList<String> hashes = new ArrayList<String>();
+        return makeBlob(path, hashes);
     }
 
     public String makeBlob(String path, ArrayList<String> hashes)
@@ -117,7 +129,8 @@ public class Git {
         if (!input.isDirectory()) {
             fileName = generateFileName(Files.readAllBytes(Paths.get(input.getPath())));
         } else {
-            fileName = generateFileName(treeToBytes(input));
+            ArrayList<File> files = new ArrayList<File>();
+            fileName = generateFileName(treeToBytes(input, files));
         }
 
         // check for cycles
@@ -152,14 +165,15 @@ public class Git {
             File copy = new File("git/objects/" + fileName);
             copy.createNewFile();
             FileOutputStream out = new FileOutputStream(copy);
-            out.write(treeToBytes(input));
+            ArrayList<File> files = new ArrayList<File>();
+            out.write(treeToBytes(input, files));
             out.close();
         }
 
         // inserts an entry into index file
-        FileWriter fw = new FileWriter("git/index");
-        fw.write(TYPEARRAY[input.isDirectory() ? 1 : 0] + " " + fileName + " " + input.getPath());
-        fw.close();
+        PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter("git/index", true)));
+        pw.write(TYPEARRAY[input.isDirectory() ? 1 : 0] + " " + fileName + " " + input.getPath() + "\n");
+        pw.close();
 
         return fileName;
     }
