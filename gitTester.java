@@ -1,14 +1,14 @@
 import java.io.File;
 import java.io.IOException;
 
-public class gitTester {
+public class GitTester {
     public static void main(String[] args) throws IOException {
         wipe(new File("git"));
         Git repo = new Git();
         File testFile = new File("testfile.txt");
-        repo.makeBlob(testFile.getPath());
+        repo.stage(testFile.getPath());
         File testDir = new File("testDir");
-        repo.makeBlob(testDir.getPath());
+        repo.stage(testDir.getPath());
     }
 
     // recursively remove a file
