@@ -4,10 +4,12 @@ import java.io.IOException;
 public class GitTester {
     public static void main(String[] args) throws IOException {
         Git git = new Git();
-        // git.stage("test");
-        // git.commit("me", "test commit");
-        // wipe(new File("test"));
-        git.checkout("a35ace109d15db8fa226fad307d003b7f8e6d762");
+        git.stage("test");
+        git.commit("me", "test commit");
+        wipe(new File("test"));
+        git.checkout("3e5df803ccce41485ee4517792fb9e5d413046bb");
+        // if nothing changed with the working directory or there was some indication
+        // that the files were remade, then it worked!
     }
 
     // recursively remove a file

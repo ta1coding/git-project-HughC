@@ -18,7 +18,7 @@ public class Git implements GitInterface {
 
     // constructor
     public Git() throws IOException {
-        // initGitRepo();
+        initGitRepo();
     }
 
     /**
@@ -57,11 +57,11 @@ public class Git implements GitInterface {
             if (!readMeFile.exists()) {
                 readMeFile.createNewFile();
             }
+
+            makeBlob("README.md", new ArrayList<>());
+
+            commit("author", "Initial Commit", true);
         }
-
-        makeBlob("README.md", new ArrayList<>());
-
-        commit("author", "Initial Commit", true);
     }
 
     /**
@@ -235,30 +235,6 @@ public class Git implements GitInterface {
             }
         }
         return sb.toString().getBytes();
-    }
-
-    /**
-     * Generates and returns the String version of a tree file.
-     * 
-     * @param input - the tree from which to retrieve the string version
-     * @return The String version of a tree file
-     * @throws IOException
-     */
-    private static String treeToString(File input) throws IOException {
-        StringBuilder string = new StringBuilder();
-        for (File file : input.listFiles()) {
-            BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(file.getPath()));
-            byte[] bytes = new byte[(int) file.length()];
-            inputStream.read(bytes);
-            inputStream.close();
-            String hash = generateFileHash(bytes);
-            if (file.isFile()) {
-                string.append("blob " + hash + " " + file.getPath() + "\n");
-            } else {
-                string.append("tree " + hash + " " + file.getPath() + "\n");
-            }
-        }
-        return string.toString();
     }
 
     /**
