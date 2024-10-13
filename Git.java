@@ -230,6 +230,30 @@ public class Git implements GitInterface {
     }
 
     /**
+     * Generates and returns the String version of a tree file.
+     * 
+     * @param input - the tree from which to retrieve the string version
+     * @return The String version of a tree file
+     * @throws IOException
+     */
+    private static String treeToString(File input) throws IOException {
+        StringBuilder string = new StringBuilder();
+        for (File file : input.listFiles()) {
+            BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(file.getPath()));
+            byte[] bytes = new byte[(int) file.length()];
+            inputStream.read(bytes);
+            inputStream.close();
+            String hash = generateFileHash(bytes);
+            if (file.isFile()) {
+                string.append("blob " + hash + " " + file.getPath() + "\n");
+            } else {
+                string.append("tree " + hash + " " + file.getPath() + "\n");
+            }
+        }
+        return string.toString();
+    }
+
+    /**
      * Generates the hash string name according to SHA-1.
      * 
      * @param input - The byte data of the file in byte array form
@@ -335,7 +359,6 @@ public class Git implements GitInterface {
         if (!input.isDirectory()) {
             // creates empty file in objects directory
             File copy = new File("git/objects/" + fileName);
-            copy.createNewFile();
 
             // copy the file
             if (!copy.exists())
