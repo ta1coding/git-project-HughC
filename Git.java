@@ -559,8 +559,8 @@ public class Git implements GitInterface {
      * @return True if the file should be kept (should not be deleted)
      */
     private static boolean keepFile(String fileName) {
-        return !fileName.equals("git") && !fileName.equals(".git") && !fileName.equals(".gitignore")
-                && !fileName.endsWith(".java");
+        return fileName.equals("git") || fileName.equals(".git") || fileName.equals(".gitignore")
+                || fileName.endsWith(".java");
     }
 
     /**
