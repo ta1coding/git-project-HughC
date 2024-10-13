@@ -82,7 +82,7 @@ public class Git implements GitInterface {
         if (!firstCommit)
             parent = getStringFromFile("git/HEAD");
         else
-            parent = "";
+            parent = "\n";
 
         String date = getDate();
 
@@ -90,7 +90,6 @@ public class Git implements GitInterface {
         commit.append("\n");
 
         commit.append("parent " + parent);
-        commit.append("\n");
 
         commit.append("author " + author);
         commit.append("\n");
@@ -140,12 +139,20 @@ public class Git implements GitInterface {
      * @throws IOException
      */
     private static String createCommitTree(boolean firstCommit) throws IOException {
-        String previousTree;
-        if (!firstCommit)
-            previousTree = getPreviousTree();
-        else
-            previousTree = "";
-        StringBuilder tree = new StringBuilder(previousTree);
+        String previousTreeHash;
+        StringBuilder tree;
+        if (!firstCommit) {
+            previousTreeHash = getPreviousTreeHash();
+            String previousTreePath = "git/objects/" + previousTreeHash;
+            String previousTree = getStringFromFile(previousTreePath);
+            tree = new StringBuilder(previousTree);
+        }
+            
+        else {
+            previousTreeHash = "";
+            tree = new StringBuilder();
+        }
+            
         String index = getStringFromFile("git/index");
         tree.append(index);
         String treeHash = generateFileHash(tree.toString().getBytes());
@@ -168,13 +175,14 @@ public class Git implements GitInterface {
     }
 
     /**
-     * Gets the previous tree in String form
+     * Gets the previous tree's hash in String form
      * 
-     * @return The previous tree in String form
+     * @return The previous tree's hash in String form
      * @throws IOException
      */
-    private static String getPreviousTree() throws IOException {
-        String commit = getStringFromFile("git/HEAD");
+    private static String getPreviousTreeHash() throws IOException {
+        String commitHash = getStringFromFile("git/HEAD");
+        String commit = getStringFromFile("git/objects/" + commitHash.substring(0, 40));
         String tree = commit.substring(5, 45);
         return tree;
     }
