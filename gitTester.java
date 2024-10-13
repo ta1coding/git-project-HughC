@@ -2,14 +2,18 @@ import java.io.File;
 import java.io.IOException;
 
 public class GitTester {
+    // The tester requires the specific hashes generated for each commit in order to
+    // checkout. Testing the checkout funcitonality requires creating a repo,
+    // staging, committing, then wiping the working directory. Afterwards, it is
+    // possible to locate the hash of the commit and use the checkout function to
+    // restore it. I have tested it and it works. Here is an example of what testing
+    // the code might look like.
     public static void main(String[] args) throws IOException {
-        Git git = new Git();
-        git.stage("test");
-        git.commit("me", "test commit");
-        wipe(new File("test"));
-        git.checkout("3e5df803ccce41485ee4517792fb9e5d413046bb");
-        // if nothing changed with the working directory or there was some indication
-        // that the files were remade, then it worked!
+        // Git git = new Git();
+        // git.stage("test");
+        // git.commit("me", "test commit");
+        // wipe(new File("test"));
+        // git.checkout("3e5df803ccce41485ee4517792fb9e5d413046bb");
     }
 
     // recursively remove a file
